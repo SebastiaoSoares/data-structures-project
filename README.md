@@ -10,6 +10,13 @@ A proposta foi dada no contexto da disciplina de Estruturas de Dados do curso de
 
 As especificações e a documentação do projeto estão contidos na pasta `/docs`.
 
+### Fluxo de Desenvolvimento do Projeto
+
+O projeto seguirá o seguinte fluxo durante o desenvolvimento e a testagem:
+1. Geração do volume de dados (Python) para serem consumidos pela implementação em C (`scripts/dataset_gen.py`);
+2. Execução da implementação do projeto (`src/main.c`) para ordenação das listas e geração dos resultados (`data/results.csv`);
+3. Plotagem de gráficos em Python (`plot_results.py`) que ficarão no diretório de dados (`data/plots/`).
+
 ## Organização do Projeto
 
 A orgnização do repositório e do código do projeto reflete a seguinte estrutura de pastas e arquivos:
