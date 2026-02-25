@@ -5,6 +5,9 @@ from faker import Faker
 
 def gerar_jogadores(qtd, arquivo):
     fake = Faker("pt_BR")
+
+    os.makedirs(os.path.dirname(arquivo), exist_ok=True)
+
     with open(arquivo, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["nome", "kills", "mortes", "assistencias"])
@@ -17,7 +20,7 @@ def gerar_jogadores(qtd, arquivo):
 
 if __name__ == "__main__":
     
-    # Definição dos cenários de teste
+
     cenarios = {
         "pequeno": 100,
         "medio": 1000,
@@ -26,6 +29,8 @@ if __name__ == "__main__":
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     data_dir = os.path.join(script_dir, "..", "data")
+
+    os.makedirs(data_dir, exist_ok=True)
 
     # Gera os arquivos para cada cenário
     for nome, qtd in cenarios.items():
@@ -37,5 +42,3 @@ if __name__ == "__main__":
 # Observação:
 # Para instalar a biblioteca Faker (caso ainda não tenha):
 # python -m pip install Faker
-
-
