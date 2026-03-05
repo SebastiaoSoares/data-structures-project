@@ -8,9 +8,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-
+#include <time.h>
 #include "../include/listas.h"
 #include "../include/algoritmos.h"
+#include "../src/desempenho/teste_desempenho.h"
+
 
 
 // FUNÇÕES DE LEITURA
@@ -130,6 +132,7 @@ int main() {
                 break;
             case 8:
                 printf("\nTestes de desempenho automatizados medindo o tempo em ms.\n");
+                teste_desempenho();
                 break;
             case 0:
                 printf("\nEncerrando o sistema e liberando memoria...\n");

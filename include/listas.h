@@ -199,7 +199,6 @@ bool remove_lista_dinamica(ListaDinamica *lista, const char *nome);
  * a lista para um estado vazio (`inicio` = `NULL`, `n_elementos` = 0).
  * 
  */
-
-void libera_lista_dinamica(ListaDinamica *lista);
-
-#endif // LISTAS_H
+ void libera_lista_dinamica(ListaDinamica *lista);
+void carregar_dados_csv(const char *arquivo, ListaEstatica *lista_est, ListaDinamica *lista_din);
+#endif
