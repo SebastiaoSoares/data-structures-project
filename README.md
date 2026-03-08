@@ -23,10 +23,14 @@ A orgnização do repositório e do código do projeto reflete a seguinte estrut
 
 ```bash
 /
-├── data/                     # Dados geras (ignorado pelo Git)
-│   ├── plots/                # Gráficos (gerados pelo Python)
-│   ├── jogadores.csv         # Jogadores (gerados pelo Python)
-│   └── results.csv           # Dados (gerados pelo C)
+├── data/                     # Dados gerados (ignorado pelo Git)
+│   ├── plots/                # Graficos (gerados pelo Python)
+│   ├── cenarios/             # Variacoes por tipo de entrada
+│   │   ├── aleatorio/
+│   │   ├── ordenado/
+│   │   └── inverso/
+│   │   
+│   └── results.csv           # Resultados do benchmark em C
 ├── include/                  # Cabeçalhos (.h)
 │   ├── algoritmos.h          
 │   └── listas.h              

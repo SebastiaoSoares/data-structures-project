@@ -1,7 +1,7 @@
 /**
  * @file main.c
  * @brief Programa principal do Sistema de Ranking de Jogos.
- * Lê dados gerados, popula as estruturas e executa as ordenações.
+ * Le dados gerados, popula as estruturas e executa as ordenacoes.
  */
 
 #include <stdio.h>
@@ -14,20 +14,21 @@
 #include "../src/desempenho/teste_desempenho.h"
 
 
+// FUNCOES DE LEITURA
 
-// FUNÇÕES DE LEITURA
-
-// Calcula pontuação baseada nos dados do dataset_gen.py
+// Calcula pontuacao baseada nos dados do dataset_gen.py
 Jogador criar_jogador_do_csv(char *nome, int kills, int mortes, int assistencias) {
     Jogador j;
     strncpy(j.nome, nome, MAX_NOME_JOGADOR - 1);
-    j.nome[MAX_NOME_JOGADOR - 1] = '\0'; 
+    j.nome[MAX_NOME_JOGADOR - 1] = '\0';
 
-    // Regra de negócio criada para o jogo:
+    // Regra de negocio criada para o jogo.
     j.pontuacao = (kills * 10) + (assistencias * 5) - (mortes * 2);
-    if (j.pontuacao < 0) j.pontuacao = 0;
+    if (j.pontuacao < 0) {
+        j.pontuacao = 0;
+    }
 
-    j.nivel = (j.pontuacao / 50) + 1; // Nível sobe a cada 50 pontos
+    j.nivel = (j.pontuacao / 50) + 1;
 
     return j;
 }
@@ -42,12 +43,10 @@ void carregar_dados_csv(const char *caminho, ListaEstatica *l_est, ListaDinamica
     }
 
     char linha[256];
-    // Pula o cabeçalho do CSV
-    fgets(linha, sizeof(linha), f); 
+    fgets(linha, sizeof(linha), f); // Pula cabecalho.
 
     int cont = 0;
     while (fgets(linha, sizeof(linha), f)) {
-        // Remove quebra de linha do final
         linha[strcspn(linha, "\n")] = 0;
 
         char *nome = strtok(linha, ",");
@@ -57,17 +56,99 @@ void carregar_dados_csv(const char *caminho, ListaEstatica *l_est, ListaDinamica
 
         if (nome && kills_str && mortes_str && assis_str) {
             Jogador j = criar_jogador_do_csv(nome, atoi(kills_str), atoi(mortes_str), atoi(assis_str));
-            
-            // Popula ambas as listas para facilitar os testes
+
             insere_lista_estatica(l_est, j);
             insere_lista_dinamica(l_din, j);
             cont++;
         }
     }
+
     fclose(f);
     if (verbose) {
         printf("Sucesso: %d jogadores carregados do arquivo %s!\n", cont, caminho);
     }
+}
+
+static void limpar_buffer_entrada(void) {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF) {
+    }
+}
+
+static const char *obter_label_tamanho(int opcao_tamanho) {
+    switch (opcao_tamanho) {
+        case 1:
+            return "pequeno";
+        case 2:
+            return "medio";
+        case 3:
+            return "grande";
+        default:
+            return NULL;
+    }
+}
+
+static const char *obter_pasta_tipo_entrada(int tipo_entrada) {
+    switch (tipo_entrada) {
+        case 1:
+            return "aleatorio";
+        case 2:
+            return "ordenado";
+        case 3:
+            return "inverso";
+        default:
+            return NULL;
+    }
+}
+
+static int solicitar_tipo_entrada(void) {
+    int tipo_entrada;
+
+    while (1) {
+        printf("\nTipo de entrada:\n");
+        printf("[1] Aleatorio\n");
+        printf("[2] Ordenado\n");
+        printf("[3] Inverso (pior caso)\n");
+        printf("Escolha: ");
+
+        if (scanf("%d", &tipo_entrada) != 1) {
+            limpar_buffer_entrada();
+            printf("Opcao invalida.\n");
+            continue;
+        }
+
+        if (tipo_entrada >= 1 && tipo_entrada <= 3) {
+            return tipo_entrada;
+        }
+
+        printf("Opcao invalida.\n");
+    }
+}
+
+static void carregar_dataset_por_menu(int opcao_tamanho, ListaEstatica *lista_est, ListaDinamica *lista_din, bool verbose) {
+    const char *tamanho = obter_label_tamanho(opcao_tamanho);
+    if (!tamanho) {
+        if (verbose) {
+            printf("Opcao de tamanho invalida.\n");
+        }
+        return;
+    }
+
+    int tipo_entrada = solicitar_tipo_entrada();
+    const char *pasta_tipo = obter_pasta_tipo_entrada(tipo_entrada);
+    if (!pasta_tipo) {
+        if (verbose) {
+            printf("Tipo de entrada invalido.\n");
+        }
+        return;
+    }
+
+    char caminho[128];
+    snprintf(caminho, sizeof(caminho), "data/cenarios/%s/jogadores_%s.csv", pasta_tipo, tamanho);
+
+    libera_lista_estatica(lista_est);
+    libera_lista_dinamica(lista_din);
+    carregar_dados_csv(caminho, lista_est, lista_din, verbose);
 }
 
 
@@ -110,23 +191,19 @@ int main(int argc, char *argv[]) {
     int opcao;
     do {
         exibir_menu();
-        if (scanf("%d", &opcao) != 1) break;
+        if (scanf("%d", &opcao) != 1) {
+            break;
+        }
 
         switch (opcao) {
             case 1:
-                libera_lista_estatica(&lista_est);
-                libera_lista_dinamica(&lista_din);
-                carregar_dados_csv("data/jogadores_pequeno.csv", &lista_est, &lista_din, verbose);
+                carregar_dataset_por_menu(1, &lista_est, &lista_din, verbose);
                 break;
             case 2:
-                libera_lista_estatica(&lista_est);
-                libera_lista_dinamica(&lista_din);
-                carregar_dados_csv("data/jogadores_medio.csv", &lista_est, &lista_din, verbose);
+                carregar_dataset_por_menu(2, &lista_est, &lista_din, verbose);
                 break;
             case 3:
-                libera_lista_estatica(&lista_est);
-                libera_lista_dinamica(&lista_din);
-                carregar_dados_csv("data/jogadores_grande.csv", &lista_est, &lista_din, verbose);
+                carregar_dataset_por_menu(3, &lista_est, &lista_din, verbose);
                 break;
             case 4:
                 imprime_lista_estatica(&lista_est);

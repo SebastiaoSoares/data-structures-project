@@ -1,21 +1,38 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include "../../include/listas.h"
 #include "../../include/algoritmos.h"
 
 #define REPETICOES 100  // número de vezes que cada teste será repetido
 
+// Retorna um timestamp em nanossegundos compatível com Windows e Linux.
+static double get_time_ns(void) {
+#ifdef _WIN32
+    LARGE_INTEGER freq, counter;
+    QueryPerformanceFrequency(&freq);
+    QueryPerformanceCounter(&counter);
+    return ((double)counter.QuadPart * 1e9) / (double)freq.QuadPart;
+#else
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (double)ts.tv_sec * 1e9 + (double)ts.tv_nsec;
+#endif
+}
+
 // Função auxiliar para rodar cada algoritmo várias vezes e calcular média
 void rodar_algoritmo(const char *nome,
                      const char *dataset,
                      const char *label,
+                     const char *tipo_entrada,
                      void (*alg_est)(ListaEstatica*),
                      void (*alg_din)(ListaDinamica*),
                      FILE *out,
                      int verbose) {
     double soma_tempo;
-    struct timespec inicio, fim; // Estrutura para capturar segundos e nanossegundos
     double tempo_ns;
 
     // Teste com lista estática
@@ -29,13 +46,13 @@ void rodar_algoritmo(const char *nome,
             carregar_dados_csv(dataset, &lista_est, &lista_din, verbose);
 
             // Captura o tempo inicial em nanossegundos
-            clock_gettime(CLOCK_MONOTONIC, &inicio);
+            double inicio_ns = get_time_ns();
             alg_est(&lista_est);
             // Captura o tempo final
-            clock_gettime(CLOCK_MONOTONIC, &fim);
+            double fim_ns = get_time_ns();
 
-            // Calcula a diferença de tempo: (segundos * 10^9) + nanossegundos
-            tempo_ns = (fim.tv_sec - inicio.tv_sec) * 1e9 + (fim.tv_nsec - inicio.tv_nsec);
+            // Calcula a diferença em nanossegundos.
+            tempo_ns = fim_ns - inicio_ns;
             soma_tempo += tempo_ns;
 
             libera_lista_estatica(&lista_est);
@@ -43,9 +60,9 @@ void rodar_algoritmo(const char *nome,
         }
         double media = soma_tempo / REPETICOES;
         if (verbose) {
-            printf("%s Estatica [%s]: Média %.2f ns (%d repetições)\n", nome, label, media, REPETICOES);
+            printf("%s Estatica [%s - %s]: Media %.2f ns (%d repeticoes)\n", nome, label, tipo_entrada, media, REPETICOES);
         }
-        fprintf(out, "%s Estatica,%s,%.2f\n", nome, label, media);
+        fprintf(out, "%s Estatica,%s,%s,%.2f\n", nome, label, tipo_entrada, media);
     }
 
     // Teste com lista dinâmica
@@ -59,13 +76,13 @@ void rodar_algoritmo(const char *nome,
             carregar_dados_csv(dataset, &lista_est, &lista_din, verbose);
 
             // Captura o tempo inicial em nanossegundos
-            clock_gettime(CLOCK_MONOTONIC, &inicio);
+            double inicio_ns = get_time_ns();
             alg_din(&lista_din);
             // Captura o tempo final
-            clock_gettime(CLOCK_MONOTONIC, &fim);
+            double fim_ns = get_time_ns();
 
-            // Calcula a diferença de tempo: (segundos * 10^9) + nanossegundos
-            tempo_ns = (fim.tv_sec - inicio.tv_sec) * 1e9 + (fim.tv_nsec - inicio.tv_nsec);
+            // Calcula a diferença em nanossegundos.
+            tempo_ns = fim_ns - inicio_ns;
             soma_tempo += tempo_ns;  
 
             libera_lista_estatica(&lista_est);
@@ -73,20 +90,32 @@ void rodar_algoritmo(const char *nome,
         }
         double media = soma_tempo / REPETICOES;
         if (verbose) {
-            printf("%s Dinamica [%s]: Média %.2f ns (%d repetições)\n", nome, label, media, REPETICOES);
+            printf("%s Dinamica [%s - %s]: Media %.2f ns (%d repeticoes)\n", nome, label, tipo_entrada, media, REPETICOES);
         }
-        fprintf(out, "%s Dinamica,%s,%.2f\n", nome, label, media);
+        fprintf(out, "%s Dinamica,%s,%s,%.2f\n", nome, label, tipo_entrada, media);
     }
 }
 
 // Função principal
 void teste_desempenho(int verbose) {
-    const char *datasets[] = {
-        "data/jogadores_pequeno.csv",
-        "data/jogadores_medio.csv",
-        "data/jogadores_grande.csv"
+    typedef struct {
+        const char *dataset;
+        const char *tamanho;
+        const char *tipo_entrada;
+    } DatasetConfig;
+
+    const DatasetConfig configs[] = {
+        {"data/cenarios/aleatorio/jogadores_pequeno.csv", "Pequeno", "Aleatorio"},
+        {"data/cenarios/ordenado/jogadores_pequeno.csv", "Pequeno", "Ordenado"},
+        {"data/cenarios/inverso/jogadores_pequeno.csv", "Pequeno", "Inverso"},
+        {"data/cenarios/aleatorio/jogadores_medio.csv", "Medio", "Aleatorio"},
+        {"data/cenarios/ordenado/jogadores_medio.csv", "Medio", "Ordenado"},
+        {"data/cenarios/inverso/jogadores_medio.csv", "Medio", "Inverso"},
+        {"data/cenarios/aleatorio/jogadores_grande.csv", "Grande", "Aleatorio"},
+        {"data/cenarios/ordenado/jogadores_grande.csv", "Grande", "Ordenado"},
+        {"data/cenarios/inverso/jogadores_grande.csv", "Grande", "Inverso"},
     };
-    const char *labels[] = {"Pequeno", "Medio", "Grande"};
+
     FILE *out = fopen("data/results.csv", "w");
     if (!out) {
         if (verbose) {
@@ -95,15 +124,15 @@ void teste_desempenho(int verbose) {
         return;
     }
 
-    // Cabeçalho do CSV atualizado para exibir (ns)
-    fprintf(out, "Algoritmo,Tamanho,Tempo(ns)\n");
+    // Cabecalho do CSV com coluna de tipo de entrada.
+    fprintf(out, "Algoritmo,Tamanho,TipoEntrada,Tempo(ns)\n");
 
-    for (int i = 0; i < 3; i++) {
-        rodar_algoritmo("BubbleSort", datasets[i], labels[i], bubbleSort_ListaEstatica, bubbleSort_ListaDinamica, out, verbose);
-        rodar_algoritmo("QuickSort", datasets[i], labels[i], quickSort_ListaEstatica, quickSort_ListaDinamica, out, verbose);
-        rodar_algoritmo("MergeSort", datasets[i], labels[i], mergeSort_ListaEstatica, mergeSort_ListaDinamica, out, verbose);
-        rodar_algoritmo("SelectionSort", datasets[i], labels[i], selectionSort_ListaEstatica, selectionSort_ListaDinamica, out, verbose);
-        rodar_algoritmo("InsertionSort", datasets[i], labels[i], insertionSort_ListaEstatica, insertionSort_ListaDinamica, out, verbose);
+    for (size_t i = 0; i < sizeof(configs) / sizeof(configs[0]); i++) {
+        rodar_algoritmo("BubbleSort", configs[i].dataset, configs[i].tamanho, configs[i].tipo_entrada, bubbleSort_ListaEstatica, bubbleSort_ListaDinamica, out, verbose);
+        rodar_algoritmo("QuickSort", configs[i].dataset, configs[i].tamanho, configs[i].tipo_entrada, quickSort_ListaEstatica, quickSort_ListaDinamica, out, verbose);
+        rodar_algoritmo("MergeSort", configs[i].dataset, configs[i].tamanho, configs[i].tipo_entrada, mergeSort_ListaEstatica, mergeSort_ListaDinamica, out, verbose);
+        rodar_algoritmo("SelectionSort", configs[i].dataset, configs[i].tamanho, configs[i].tipo_entrada, selectionSort_ListaEstatica, selectionSort_ListaDinamica, out, verbose);
+        rodar_algoritmo("InsertionSort", configs[i].dataset, configs[i].tamanho, configs[i].tipo_entrada, insertionSort_ListaEstatica, insertionSort_ListaDinamica, out, verbose);
     }
     
     fclose(out);
