@@ -32,10 +32,12 @@ Jogador criar_jogador_do_csv(char *nome, int kills, int mortes, int assistencias
     return j;
 }
 
-void carregar_dados_csv(const char *caminho, ListaEstatica *l_est, ListaDinamica *l_din) {
+void carregar_dados_csv(const char *caminho, ListaEstatica *l_est, ListaDinamica *l_din, bool verbose) {
     FILE *f = fopen(caminho, "r");
     if (!f) {
-        printf("Erro ao abrir o arquivo: %s\n", caminho);
+        if (verbose) {
+            printf("Erro ao abrir o arquivo: %s\n", caminho);
+        }
         return;
     }
 
@@ -63,7 +65,9 @@ void carregar_dados_csv(const char *caminho, ListaEstatica *l_est, ListaDinamica
         }
     }
     fclose(f);
-    printf("Sucesso: %d jogadores carregados do arquivo %s!\n", cont, caminho);
+    if (verbose) {
+        printf("Sucesso: %d jogadores carregados do arquivo %s!\n", cont, caminho);
+    }
 }
 
 
@@ -86,7 +90,17 @@ void exibir_menu() {
     printf("Escolha uma opcao: ");
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+    bool verbose = true;
+    if (argc > 1 && strcmp(argv[1], "-q") == 0) {
+        verbose = false;
+    }
+
+    if (!verbose) {
+        teste_desempenho(0);
+        return 0;
+    }
+
     ListaEstatica lista_est;
     ListaDinamica lista_din;
 
@@ -102,17 +116,17 @@ int main() {
             case 1:
                 libera_lista_estatica(&lista_est);
                 libera_lista_dinamica(&lista_din);
-                carregar_dados_csv("data/jogadores_pequeno.csv", &lista_est, &lista_din);
+                carregar_dados_csv("data/jogadores_pequeno.csv", &lista_est, &lista_din, verbose);
                 break;
             case 2:
                 libera_lista_estatica(&lista_est);
                 libera_lista_dinamica(&lista_din);
-                carregar_dados_csv("data/jogadores_medio.csv", &lista_est, &lista_din);
+                carregar_dados_csv("data/jogadores_medio.csv", &lista_est, &lista_din, verbose);
                 break;
             case 3:
                 libera_lista_estatica(&lista_est);
                 libera_lista_dinamica(&lista_din);
-                carregar_dados_csv("data/jogadores_grande.csv", &lista_est, &lista_din);
+                carregar_dados_csv("data/jogadores_grande.csv", &lista_est, &lista_din, verbose);
                 break;
             case 4:
                 imprime_lista_estatica(&lista_est);
@@ -132,7 +146,7 @@ int main() {
                 break;
             case 8:
                 printf("\nTestes de desempenho automatizados medindo o tempo em ms.\n");
-                teste_desempenho();
+                teste_desempenho(verbose);
                 break;
             case 0:
                 printf("\nEncerrando o sistema e liberando memoria...\n");

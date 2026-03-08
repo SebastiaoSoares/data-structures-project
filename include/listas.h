@@ -200,5 +200,5 @@ bool remove_lista_dinamica(ListaDinamica *lista, const char *nome);
  * 
  */
  void libera_lista_dinamica(ListaDinamica *lista);
-void carregar_dados_csv(const char *arquivo, ListaEstatica *lista_est, ListaDinamica *lista_din);
+void carregar_dados_csv(const char *arquivo, ListaEstatica *lista_est, ListaDinamica *lista_din, bool verbose);
 #endif
