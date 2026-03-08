@@ -13,7 +13,11 @@ def carregar_dados(caminho_csv):
         mapa_tamanhos = {"Pequeno": 100, "Medio": 1000, "Grande": 10000}
         df['N'] = df['Tamanho'].map(mapa_tamanhos)
         
-        df.rename(columns={'Tempo(ms)': 'Tempo_ms'}, inplace=True)
+        # Converter Tempo(ns) para Tempo(ms)
+        if 'Tempo(ns)' in df.columns:
+            df['Tempo_ms'] = df['Tempo(ns)'] / 1_000_000
+        elif 'Tempo(ms)' in df.columns:
+            df.rename(columns={'Tempo(ms)': 'Tempo_ms'}, inplace=True)
         
         return df
     except Exception as e:

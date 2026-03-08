@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
+
 #include "../../include/listas.h"
 #include "../../include/algoritmos.h"
 
@@ -35,37 +37,35 @@ void rodar_algoritmo(const char *nome,
     double soma_tempo;
     double tempo_ns;
 
-    // Teste com lista estática
+    // --- TESTE COM LISTA ESTÁTICA ---
     if (alg_est) {
         soma_tempo = 0.0;
         for (int r = 0; r < REPETICOES; r++) {
             ListaEstatica lista_est;
             inicializa_lista_estatica(&lista_est);
-            ListaDinamica lista_din;
+            ListaDinamica lista_din; // Inicializa mas não usa no teste estático
             inicializa_lista_dinamica(&lista_din);
-            carregar_dados_csv(dataset, &lista_est, &lista_din, verbose);
 
-            // Captura o tempo inicial em nanossegundos
+            // IMPORTANTE: Passamos '0' no verbose para não inundar o terminal durante as repetições
+            carregar_dados_csv(dataset, &lista_est, &lista_din, 0);
+
             double inicio_ns = get_time_ns();
             alg_est(&lista_est);
-            // Captura o tempo final
             double fim_ns = get_time_ns();
 
-            // Calcula a diferença em nanossegundos.
-            tempo_ns = fim_ns - inicio_ns;
-            soma_tempo += tempo_ns;
+            soma_tempo += (fim_ns - inicio_ns);
 
             libera_lista_estatica(&lista_est);
             libera_lista_dinamica(&lista_din);
         }
         double media = soma_tempo / REPETICOES;
         if (verbose) {
-            printf("%s Estatica [%s - %s]: Media %.2f ns (%d repeticoes)\n", nome, label, tipo_entrada, media, REPETICOES);
+            printf("%s Estatica [%s - %s]: Media %.2f ns\n", nome, label, tipo_entrada, media);
         }
         fprintf(out, "%s Estatica,%s,%s,%.2f\n", nome, label, tipo_entrada, media);
     }
 
-    // Teste com lista dinâmica
+    // --- TESTE COM LISTA DINÂMICA ---
     if (alg_din) {
         soma_tempo = 0.0;
         for (int r = 0; r < REPETICOES; r++) {
@@ -73,30 +73,28 @@ void rodar_algoritmo(const char *nome,
             inicializa_lista_estatica(&lista_est);
             ListaDinamica lista_din;
             inicializa_lista_dinamica(&lista_din);
-            carregar_dados_csv(dataset, &lista_est, &lista_din, verbose);
 
-            // Captura o tempo inicial em nanossegundos
+            // Silencioso aqui também (0)
+            carregar_dados_csv(dataset, &lista_est, &lista_din, 0);
+
             double inicio_ns = get_time_ns();
             alg_din(&lista_din);
-            // Captura o tempo final
             double fim_ns = get_time_ns();
 
-            // Calcula a diferença em nanossegundos.
-            tempo_ns = fim_ns - inicio_ns;
-            soma_tempo += tempo_ns;  
+            soma_tempo += (fim_ns - inicio_ns);
 
             libera_lista_estatica(&lista_est);
             libera_lista_dinamica(&lista_din);
         }
         double media = soma_tempo / REPETICOES;
         if (verbose) {
-            printf("%s Dinamica [%s - %s]: Media %.2f ns (%d repeticoes)\n", nome, label, tipo_entrada, media, REPETICOES);
+            printf("%s Dinamica [%s - %s]: Media %.2f ns\n", nome, label, tipo_entrada, media);
         }
         fprintf(out, "%s Dinamica,%s,%s,%.2f\n", nome, label, tipo_entrada, media);
     }
 }
 
-// Função principal
+// Função principal de teste
 void teste_desempenho(int verbose) {
     typedef struct {
         const char *dataset;
@@ -106,37 +104,36 @@ void teste_desempenho(int verbose) {
 
     const DatasetConfig configs[] = {
         {"data/cenarios/aleatorio/jogadores_pequeno.csv", "Pequeno", "Aleatorio"},
-        {"data/cenarios/ordenado/jogadores_pequeno.csv", "Pequeno", "Ordenado"},
-        {"data/cenarios/inverso/jogadores_pequeno.csv", "Pequeno", "Inverso"},
-        {"data/cenarios/aleatorio/jogadores_medio.csv", "Medio", "Aleatorio"},
-        {"data/cenarios/ordenado/jogadores_medio.csv", "Medio", "Ordenado"},
-        {"data/cenarios/inverso/jogadores_medio.csv", "Medio", "Inverso"},
-        {"data/cenarios/aleatorio/jogadores_grande.csv", "Grande", "Aleatorio"},
-        {"data/cenarios/ordenado/jogadores_grande.csv", "Grande", "Ordenado"},
-        {"data/cenarios/inverso/jogadores_grande.csv", "Grande", "Inverso"},
+        {"data/cenarios/ordenado/jogadores_pequeno.csv",  "Pequeno", "Ordenado"},
+        {"data/cenarios/inverso/jogadores_pequeno.csv",   "Pequeno", "Inverso"},
+        {"data/cenarios/aleatorio/jogadores_medio.csv",    "Medio",   "Aleatorio"},
+        {"data/cenarios/ordenado/jogadores_medio.csv",     "Medio",   "Ordenado"},
+        {"data/cenarios/inverso/jogadores_medio.csv",      "Medio",   "Inverso"},
+        {"data/cenarios/aleatorio/jogadores_grande.csv",   "Grande",  "Aleatorio"},
+        {"data/cenarios/ordenado/jogadores_grande.csv",    "Grande",  "Ordenado"},
+        {"data/cenarios/inverso/jogadores_grande.csv",     "Grande",  "Inverso"},
     };
 
     FILE *out = fopen("data/results.csv", "w");
     if (!out) {
-        if (verbose) {
-            printf("Erro ao criar arquivo de resultados.\n");
-        }
+        if (verbose) printf("Erro ao criar arquivo de resultados.\n");
         return;
     }
 
-    // Cabecalho do CSV com coluna de tipo de entrada.
     fprintf(out, "Algoritmo,Tamanho,TipoEntrada,Tempo(ns)\n");
 
+    if (verbose) printf("Iniciando benchmarks (isso pode levar alguns segundos)...\n\n");
+
     for (size_t i = 0; i < sizeof(configs) / sizeof(configs[0]); i++) {
-        rodar_algoritmo("BubbleSort", configs[i].dataset, configs[i].tamanho, configs[i].tipo_entrada, bubbleSort_ListaEstatica, bubbleSort_ListaDinamica, out, verbose);
-        rodar_algoritmo("QuickSort", configs[i].dataset, configs[i].tamanho, configs[i].tipo_entrada, quickSort_ListaEstatica, quickSort_ListaDinamica, out, verbose);
-        rodar_algoritmo("MergeSort", configs[i].dataset, configs[i].tamanho, configs[i].tipo_entrada, mergeSort_ListaEstatica, mergeSort_ListaDinamica, out, verbose);
+        rodar_algoritmo("BubbleSort",    configs[i].dataset, configs[i].tamanho, configs[i].tipo_entrada, bubbleSort_ListaEstatica, bubbleSort_ListaDinamica, out, verbose);
+        rodar_algoritmo("QuickSort",     configs[i].dataset, configs[i].tamanho, configs[i].tipo_entrada, quickSort_ListaEstatica,  quickSort_ListaDinamica,  out, verbose);
+        rodar_algoritmo("MergeSort",     configs[i].dataset, configs[i].tamanho, configs[i].tipo_entrada, mergeSort_ListaEstatica,  mergeSort_ListaDinamica,  out, verbose);
         rodar_algoritmo("SelectionSort", configs[i].dataset, configs[i].tamanho, configs[i].tipo_entrada, selectionSort_ListaEstatica, selectionSort_ListaDinamica, out, verbose);
         rodar_algoritmo("InsertionSort", configs[i].dataset, configs[i].tamanho, configs[i].tipo_entrada, insertionSort_ListaEstatica, insertionSort_ListaDinamica, out, verbose);
     }
     
     fclose(out);
     if (verbose) {
-        printf("Resultados salvos em data/results.csv\n");
+        printf("\nFim dos testes. Resultados salvos em data/results.csv\n");
     }
 }
