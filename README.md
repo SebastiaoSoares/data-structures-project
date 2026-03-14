@@ -50,16 +50,49 @@ A orgnização do repositório e do código do projeto reflete a seguinte estrut
 └── requirements.txt
 ```
 
-## Guia de Contribuição
+## Como realizar os testes
 
 ### Preparando o Ambiente
 
-Clonagem do repositório:
+Clone o repositório:
 ```bash
 git clone https://github.com/aishatomaz/estrutura-de-dados.git
 ```
-_Você também pode constribuir através de um **fork**._
+Caso queira, você pode contribuir através de um **fork**._
 
-Certifique-se de instalar as dependências do Python contidas no arquivo `requirements.txt`.
+Prepare o ambiente - Python:
+```bash
+# 1. Crie um ambiente virtual
+python -m venv venv
 
-_**[O guia será atualizado confome o projeto for desenvolvido.]**_
+# 2. Entre no ambiente virtual
+source ./venv/bin/activate # LINUX
+.\venv\Scripts\activate # WINDOWS
+
+# 3. Instale as dependências do Python
+pip install -r requirements.txt
+```
+
+Prepare o ambiente - C:
+```bash
+# Compile os arquivos de execução
+
+gcc -Iinclude src/main.c src/algoritmos/*.c src/estruturas/*.c src/desempenho/teste_desempenho.c -o main # LINUX
+
+gcc -Iinclude src\main.c src\algoritmos\*.c src\estruturas\*.c src\desempenho\teste_desempenho.c -o main.exe # WINDOWS
+```
+
+### Executando
+
+Execute os testes:
+```bash
+# Gere os dados com o Python
+python ./scripts/dataset_gen.py
+
+# Faça as análises com o C
+./main # LINUX
+.\main.exe # WINDOWS
+
+# Gere os gráficos de desempenho
+python ./scripts/plot_result.py
+```
